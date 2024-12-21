@@ -1,3 +1,14 @@
+
+import numpy as np
+import scipy.stats as st
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.ndimage import gaussian_filter1d
+
+import mBaseFunctions
+import os, sys, pickle, time, re, csv
+
+
 def partition(alist, indices):
     return np.asarray([np.asarray(alist[i:j]) for i, j in zip(indices[:-1], indices[1:])])
 
@@ -38,8 +49,7 @@ def raw_to_norm(raw_neuron,Trial_times_conc,num_states=4,return_mean=True,smooth
     else:
         return(Actual_norm)
     
-
-
+Data_folder = "Data/"
 def get_sessions(mouse_recday, Data_folder=Data_folder):
     
     Tasks = np.load(Data_folder + "Task_data_" + mouse_recday + ".npy")
