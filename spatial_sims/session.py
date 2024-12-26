@@ -11,6 +11,9 @@ class NavigationSession:
                         define the repeated loop in this session.
         """
         self.env = env
+        # Append the first tower to ensure 4 transitions:
+        if len(tower_sequence) == 4:
+            tower_sequence = tower_sequence + [tower_sequence[0]]
         self.tower_sequence = tower_sequence
 
     def generate_path_for_trial(self):
