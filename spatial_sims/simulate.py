@@ -3,7 +3,7 @@
 import numpy as np
 import os
 from environment import TowerEnvironment
-from place_cells import generate_population
+from place_cells import generate_population, save_placecell_rate_maps
 from session import NavigationSession, build_session_sequences
 import pickle  # or use np.save, etc.
 
@@ -22,6 +22,7 @@ def run_simulation(
 
     # 2) Build the place cell population
     place_cells = generate_population(num_neurons=n_neurons)
+    save_placecell_rate_maps(place_cells, output_dir="peak_maps")
 
     # 3) Build sequences for each session
     session_sequences = build_session_sequences(n_sessions)

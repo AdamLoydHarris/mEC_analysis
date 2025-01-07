@@ -1,6 +1,9 @@
 # place_cells.py
 
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import os
 
 class PlaceCell:
     def __init__(self, neuron_id, peak_locations, peak_rate=10.0, baseline_rate=1.0):
@@ -53,3 +56,50 @@ def generate_population(num_neurons=50):
         all_place_cells.append(pc)
 
     return all_place_cells
+
+
+
+def save_placecell_rate_maps(place_cells, output_dir="peak_maps"):
+    """
+    place_cells: list of PlaceCell objects
+    output_dir: directory to save PDF and numpy arrays
+    """
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Prepare a PDF to hold multiple pages, one page per neuron
+    pdf_path = os.path.join(output_dir, "placecell_peak_maps.pdf")
+    with PdfPages(pdf_path) as pdf:
+
+        # We'll also store the numeric arrays, e.g. a big array (n_neurons, 3, 3)
+        all_peak_maps = []
+
+        for pc in place_cells:
+            # Create 3x3 array of baseline
+            rate_map = np.full((3,3), pc.baseline_rate, dtype=float)
+            # For each peak location, set to peak_rate
+            for tower_id in pc.peak_locations:
+                # tower_id is in [1..9], so we do tower_id-1 to get 0..8
+                row = (tower_id-1) // 3
+                col = (tower_id-1) % 3
+                rate_map[row, col] = pc.peak_rate
+
+            all_peak_maps.append(rate_map)
+
+            # Plot
+            fig, ax = plt.subplots(figsize=(3,3))
+            cax = ax.imshow(rate_map, cmap="viridis", origin="upper", vmin=0)
+            ax.set_title(f"Neuron {pc.neuron_id}: peaks={pc.peak_locations}")
+            ax.axis('off')
+            fig.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
+
+            pdf.savefig(fig)
+            plt.close(fig)
+
+        # Convert all_peak_maps to a numpy array (n_neurons, 3, 3)
+        all_peak_maps = np.array(all_peak_maps)
+        np.save(os.path.join(output_dir, "placecell_peak_maps.npy"), all_peak_maps)
+
+    print(f"Saved place cell peak maps PDF to {pdf_path}")
+    print(f"Saved place cell peak maps arrays to {output_dir}/placecell_peak_maps.npy")

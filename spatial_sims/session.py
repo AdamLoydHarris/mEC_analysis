@@ -6,12 +6,13 @@ from environment import TowerEnvironment
 class NavigationSession:
     def __init__(self, env, tower_sequence):
         """
-        env: a TowerEnvironment instance
-        tower_sequence: list or array of tower IDs of length 4 that 
-                        define the repeated loop in this session.
+        env: TowerEnvironment
+        tower_sequence: originally 4 towers, e.g. [1, 5, 7, 3]
+        We will append the first tower so that the path forms
+        a loop with 4 transitions: (1->5, 5->7, 7->3, 3->1).
         """
         self.env = env
-        # Append the first tower to ensure 4 transitions:
+        # Make sure the last tower is the same as the first:
         if len(tower_sequence) == 4:
             tower_sequence = tower_sequence + [tower_sequence[0]]
         self.tower_sequence = tower_sequence
@@ -64,30 +65,52 @@ class NavigationSession:
 
     def _distribute_path_over_time(self, tower_list, n_bins):
         """
-        Distribute the set of towers tower_list over n_bins, linearly. 
-        For example, if tower_list = [1,2,5], we have 3 tower steps. 
-        We'll allocate floor(n_bins / (num_steps-1)) bins between transitions, etc.
-        Simplistically, we can just repeat each tower for the fraction of bins that 
-        correspond to that step. 
+        We want to fill n_bins by walking sequentially through
+        all consecutive pairs in tower_list, distributing time evenly.
+        E.g. BFS path might be [1, 2, 5, 8, 9].
+        We'll treat that as 4 segments, each assigned ~n_bins/4 bins, etc.
         """
+        path_bins = []
+
+        # If there's only one tower, just fill them all:
         if len(tower_list) == 1:
-            # If there's only a single tower (start==end), just fill all bins with that tower
             return [tower_list[0]] * n_bins
 
-        path_bins = []
-        num_steps = len(tower_list) - 1
-        bins_per_step = n_bins // num_steps  # integer division
+        total_steps = len(tower_list) - 1
+        bins_per_step = n_bins // total_steps  # integer division
+        remainder = n_bins % total_steps
 
-        for step in range(num_steps):
-            start_tower = tower_list[step]
-            end_tower = tower_list[step + 1]
-            # We'll fill 'bins_per_step' time bins with the start tower for simplicity 
-            # (could interpolate in a more fine-grained manner if you wanted).
-            path_bins += [start_tower] * bins_per_step
+        for step_idx in range(total_steps):
+            start_tower = tower_list[step_idx]
+            end_tower   = tower_list[step_idx + 1]
 
-        # If there's leftover bins (due to integer division rounding), append the final tower
-        leftover = n_bins - len(path_bins)
-        path_bins += [tower_list[-1]] * leftover
+            # For more realism, let's create a small linear ramp:
+            # e.g. if bins_per_step = 20, we might do 
+            # t=0 -> start_tower, t=10 -> end_tower, something in between.
+            # But if you only care about tower identity, let's do:
+            # half the bins = start tower, half the bins = end tower, or 
+            # something more advanced. For simplicity:
+            step_bins = bins_per_step
+            
+            # If we want to fairly distribute the leftover bins, 
+            # give 1 extra bin to some steps:
+            if step_idx < remainder:
+                step_bins += 1
+
+            # For illustration, let's just linearly fade from start_tower to end_tower 
+            # in integer steps. But if you only store "tower IDs" (like 1..9),
+            # there's no partial tower. Instead, let's store each bin as the "closest" tower 
+            # if you want a purely discrete sense.
+
+            # We'll do a simple approach: first half of step_bins = start_tower, 
+            # second half = end_tower. 
+            # In a real continuous environment, you'd interpolate or step BFS sub-locations.
+            half = step_bins // 2
+            for i in range(step_bins):
+                if i < half:
+                    path_bins.append(start_tower)
+                else:
+                    path_bins.append(end_tower)
 
         return path_bins
 
