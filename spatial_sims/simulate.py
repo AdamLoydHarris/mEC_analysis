@@ -10,7 +10,7 @@ import pickle  # or use np.save, etc.
 def run_simulation(
     n_sessions=5, 
     n_trials=30, 
-    n_neurons=50, 
+    n_neurons=200, 
     output_dir="sim_data"
 ):
     """
